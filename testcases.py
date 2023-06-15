@@ -1,31 +1,39 @@
 from optalg import *
 import random
 
-def generate_test_case(num_vertices: int, num_arcs: int):
-    graph = Graph()
+def generate_test_case(graph, num_vertices, num_edges):
 
-    start_vertex = "J"
-    end_vertex = "V"
-    graph.add_vertex(start_vertex)
-    graph.add_vertex(end_vertex)
+    vertices = [chr(ord('A') + i) for i in range(num_vertices)]
 
-    for vertex in range(num_vertices):
-        graph.add_vertex(str(vertex))
+    for vertex in vertices:
+        graph.add_vertex(vertex)
 
-    vertices = list(graph.data.keys())
-    for _ in range(num_arcs):
+    colors = ['red', 'blue']
+    
+    for _ in range(num_edges):
         from_vertex = random.choice(vertices)
         to_vertex = random.choice(vertices)
+        while from_vertex == to_vertex or graph.has_edge(from_vertex, to_vertex):
+            from_vertex = random.choice(vertices)
+            to_vertex = random.choice(vertices)
         weight = random.randint(1, 10)
-        bus = random.choice([True, False])
-        graph.add_arc(from_vertex, to_vertex, weight, bus)
+        color = random.choice(colors)
+        graph.add_edge(from_vertex, to_vertex, weight, color)
 
-    random_vertex = random.choice(vertices)
-    graph.add_arc(start_vertex, random_vertex, random.randint(1, 10))
-    random_vertex = random.choice(vertices)
-    graph.add_arc(random_vertex, end_vertex, random.randint(1, 10))
+    return graph
 
-    return graph, start_vertex, end_vertex
+graph = Graph()
 
-graph, start_vertex, end_vertex = generate_test_case(8, 10)
-graph.shortest_time(start_vertex, end_vertex)
+num_vertices = 5
+num_edges = 8
+
+test_graph = generate_test_case(graph, num_vertices, num_edges)
+
+from_vertex = 'A'
+to_vertex = 'D'
+
+graph.print_results("A", "D")
+
+
+
+

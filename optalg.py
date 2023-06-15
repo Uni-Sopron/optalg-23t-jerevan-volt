@@ -1,127 +1,84 @@
-from typing import Set
+from collections import defaultdict
 
 
 class Graph:
-    def __init__(self) -> None:
-        self.data = {}
-        self.bus = {}
-        self.bus_taken = False
+    def __init__(self):
+        self.vertices = set()
+        self.edges = defaultdict(dict)
 
-    def add_vertex(self, vertex_name: str):
-        for other_vertex in self.data:
-            self.data[other_vertex][vertex_name] = None
-            self.bus[other_vertex][vertex_name] = False
+    def add_vertex(self, vertex):
+        self.vertices.add(vertex)
 
-        self.data[vertex_name] = {vertex: None for vertex in self.data}
-        self.data[vertex_name][vertex_name] = None
-        self.bus[vertex_name] = {vertex: False for vertex in self.bus}
-        self.bus[vertex_name][vertex_name] = False
+    def add_edge(self, from_vertex, to_vertex, weight, color='blue'):
 
-    def add_arc(self, from_vertex: str, to_vertex: str, weight: float = 1, bus=False):
-        if from_vertex in self.data.keys() and to_vertex in self.data.keys():
-            self.data[from_vertex][to_vertex] = weight
-            if bus: self.bus[from_vertex][to_vertex] = True
+        if from_vertex not in self.vertices or to_vertex not in self.vertices:
+            raise ValueError("One or both vertices do not exist in the graph.")
 
-    def has_arc(self, from_vertex: str, to_vertex: str) -> bool:
-        return self.data[from_vertex][to_vertex] is not None
+        self.edges[from_vertex][to_vertex] = {'weight': weight, 'color': color}
 
-    def get_weight(self, from_vertex: str, to_vertex: str) -> float:
-        return self.data[from_vertex][to_vertex]
+    def has_edge(self, from_vertex, to_vertex):
+        return to_vertex in self.edges[from_vertex]
 
-    def is_bus(self, from_vertex: str, to_vertex: str) -> bool:
-        return self.bus[from_vertex][to_vertex]
+    def get_weight(self, from_vertex, to_vertex):
+        return self.edges[from_vertex][to_vertex]['weight']
 
-    def reachable_vertices(self, vertex: str) -> Set[str]:
-        self.unreached_vertices = set(self.data.keys())
-        self.explore(vertex)
-        reachable = set(self.data.keys()) - self.unreached_vertices
-        return reachable
+    def get_color(self, from_vertex, to_vertex):
+        return self.edges[from_vertex][to_vertex]['color']
 
-    def explore(self, vertex: str):
-        if vertex not in self.unreached_vertices:
-            return
+    def dfs(self, start, visited=None, red_edge_taken=False):
 
-        self.unreached_vertices.remove(vertex)
+        if visited is None: visited = set()
 
-        for t in self.unreached_vertices.copy():
-            if self.data[vertex][t] is not None:
-                if not self.is_bus(vertex, t):
-                    self.explore(t)
-                elif self.is_bus(vertex, t) and not self.bus_taken:
-                    self.explore(t)
+        visited.add(start)
 
-    def shortest_time(self, from_vertex: str, to_vertex: str):
-        
-        reachable = self.reachable_vertices(from_vertex)
+        for neighbor in self.edges[start]:
+            if neighbor not in visited:
+                edge_color = self.get_color(start, neighbor)
+                if not red_edge_taken or (red_edge_taken and edge_color != 'red'):
+                    red_edge_taken_new = red_edge_taken or edge_color == 'red'
+                    self.dfs(neighbor, visited, red_edge_taken_new)
 
-        if to_vertex not in reachable:
-            print(f"Vertex {to_vertex} is not reachable from {from_vertex}.")
-            return
+    def get_path_weight(self, path):
 
-        previous = {vertex: None for vertex in self.data}
-        queue = [from_vertex]
+        weight = 0
+        for i in range(len(path) - 1):
+            weight += self.get_weight(path[i], path[i+1])
+        return weight
 
-        # Szelessegi bejaras
+    def shortest_path(self, start, end, visited=None, red_edge_taken=False):
 
-        while queue:
-            current = queue.pop(0)
+        if visited is None: visited = set()
 
-            if current == to_vertex:
-                break
+        visited.add(start)
 
-            for neighbor in self.data[current]:
-                if self.has_arc(current, neighbor):
-                    if previous[neighbor] is None:
-                        if self.is_bus(current, neighbor):
-                            if not self.bus_taken:
-                                self.bus_taken = True
-                            else:
-                                continue
-                        previous[neighbor] = current
-                        queue.append(neighbor)
+        if start == end: 
+            return [end]
 
+        if start not in self.vertices or end not in self.vertices:
+            return None
 
-        if previous[to_vertex] is None:
-            print(f"Vertex {to_vertex} is not reachable from {from_vertex}.")
-            return
-        
-        # Az ut osszeallitasa
+        shortest = None
 
-        time = 0
-        path = []
-        current_vertex = to_vertex
+        for neighbor in self.edges[start]:
+            if neighbor not in visited:
+                edge_color = self.get_color(start, neighbor)
+                if not red_edge_taken or (red_edge_taken and edge_color != 'red'):
+                    red_edge_taken_new = red_edge_taken or edge_color == 'red'
+                    new_path = self.shortest_path(neighbor, end, visited.copy(), red_edge_taken_new)
+                    if new_path:
+                        new_path.insert(0, start)
+                        if shortest is None or self.get_path_weight(new_path) < self.get_path_weight(shortest):
+                            shortest = new_path
 
-        while current_vertex != from_vertex:
-            path.insert(0, current_vertex)
-            time += self.get_weight(previous[current_vertex], current_vertex)
-            current_vertex = previous[current_vertex]
+        return shortest
+    
+    def print_results(self, from_vertex, to_vertex):
 
-        path.insert(0, from_vertex)
-        path_str = " -> ".join(path)
-        print(f"The shortest time is {time} minutes from {from_vertex} to {to_vertex}.")
-        print(f"The path is: {path_str}")
+        shortest_path = self.shortest_path(from_vertex, to_vertex)
 
-
-# # Test graph
-# graph = Graph()
-
-# for i in "JABCDV":
-#     graph.add_vertex(i)
-
-# graph.add_arc('J', 'C', 5)
-# graph.add_arc('C', 'A', 9, True)
-# graph.add_arc('C', 'B', 10, True)
-# graph.add_arc('A', 'V', 1)
-# graph.add_arc('B', 'V', 1, True)
-
-# graph.shortest_time('J', 'V')
-
-
-
-
-
-
-
-
-
+        if shortest_path:
+            path_str = " -> ".join(shortest_path)
+            print(f"The shortest path is {path_str} with a weight of {self.get_path_weight(shortest_path)}.")
+        else:
+            print(f"No path found to {to_vertex} from {from_vertex}.")
 
