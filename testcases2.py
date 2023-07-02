@@ -2,7 +2,7 @@ from optalg2 import *
 import random
 
 def generate_test_case():
-    graph = Graph()
+    graph = Graph2()
 
     for vertex in "ABCD":
         graph.add_vertex(vertex)

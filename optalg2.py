@@ -1,4 +1,6 @@
-class Graph:
+import time
+
+class Graph2:
     def __init__(self) -> None:
         self.data = {}
         self.bus = {}
@@ -48,8 +50,8 @@ class Graph:
         return path_costs
 
     def construct_path(self, start_vertex: str, end_vertex: str, path_costs):
-        if end_vertex not in path_costs:
-            return None
+        # if end_vertex not in path_costs:
+        #     return None
 
         path = [end_vertex]
         current_vertex = end_vertex
@@ -71,6 +73,9 @@ class Graph:
         return weight
 
     def find_shortest_path(self, start_vertex, end_vertex):
+
+        # start = time.time()
+
         path_costs = self.bfs(start_vertex, end_vertex)
 
         if end_vertex not in path_costs:
@@ -82,9 +87,13 @@ class Graph:
         path = self.construct_path(start_vertex, end_vertex, path_costs)
         path_str = " -> ".join(path)
 
-        if num_bus_taken > 1:
-            print(f"The vertex '{end_vertex}' is reachable, but requires more than one bus to take.")
-        elif num_bus_taken == 0:
+        if not bus_taken:
             print(f"The shortest path from '{start_vertex}' to '{end_vertex}' is: {path_str}. It is {self.get_path_weight(path)} minutes.")
-        else:
+        elif bus_taken and num_bus_taken == 1:
             print(f"The shortest path from '{start_vertex}' to '{end_vertex}' with one bus ride: {path_str}. It will be {self.get_path_weight(path)} minutes.")
+        else:
+            print(f"The vertex '{end_vertex}' is not reachable.")
+
+        # end = time.time()
+        # total_time = end - start
+        # print(total_time)
